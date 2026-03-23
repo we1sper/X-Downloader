@@ -1,2 +1,2 @@
 # X-Downloader
-A Lightweight X (Twitter) Downloader Built with Go
+A Lightweight X (Twitter) Downloader Built with Go.

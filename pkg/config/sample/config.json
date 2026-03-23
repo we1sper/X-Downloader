@@ -1,0 +1,14 @@
+{
+  "Cookie": "<your_cookie>",
+  "BearerToken": "<your_bearer_token>",
+  "Retry": 3,
+  "Downloader": 6,
+  "Timeout": 60000,
+  "SaveDir": "/path/to/save_directory",
+  "Overwrite": false,
+  "Delta": true,
+  "Download": false,
+  "Proxy": "<your_http_proxy>",
+  "LogLevel": "info",
+  "LogFile": "/path/to/log_file"
+}
