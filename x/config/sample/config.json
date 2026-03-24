@@ -10,5 +10,6 @@
   "Download": false,
   "Proxy": "<your_http_proxy>",
   "LogLevel": "info",
-  "LogFile": "/path/to/log_file"
+  "LogFile": "/path/to/log_file",
+  "BarrierCandidate": 5
 }

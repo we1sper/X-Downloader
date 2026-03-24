@@ -8,27 +8,6 @@ import (
 	"X-Downloader/x/api"
 )
 
-type QueryResult struct {
-	NextCursor     string
-	EarlyStopped   bool
-	BarrierTouched string
-	Tweets         []*api.Tweet
-}
-
-func (result *QueryResult) AppendTweet(tweet *api.Tweet, barriers []string) bool {
-	for _, barrier := range barriers {
-		if barrier == tweet.ID {
-			result.EarlyStopped = true
-			result.BarrierTouched = barrier
-			break
-		}
-	}
-	if !result.EarlyStopped {
-		result.Tweets = append(result.Tweets, tweet)
-	}
-	return !result.EarlyStopped
-}
-
 type TaskMetadata struct {
 	expected      uint64
 	count         uint64
@@ -119,5 +98,36 @@ func (task *DownloadTask) finalize() {
 	} else {
 		log.Infof("[Downloader][%s] finished using %.2fm: new=%d, skipped=%d, failed=%d",
 			task.UserName, elapsed.Minutes(), task.succeed-task.skipped, task.skipped, task.failed)
+	}
+}
+
+func (x *XClient) downloader(id int) {
+	log.Infof("[Downloader][%d] starts", id)
+
+	defer func() {
+		log.Infof("[Downloader][%d] stops", id)
+		x.wg.Done()
+	}()
+
+	for {
+		select {
+		case task := <-x.taskChan:
+			if task != nil {
+				start := time.Now()
+				skipped, err := x.Download(task)
+				elapsed := time.Since(start)
+				if err != nil {
+					task.ReportFailed(elapsed, err)
+				} else if skipped {
+					task.ReportSkipped()
+				} else {
+					task.ReportSucceed(elapsed)
+				}
+			}
+		case <-x.ctx.Done():
+			return
+		default:
+			time.Sleep(100 * time.Millisecond)
+		}
 	}
 }

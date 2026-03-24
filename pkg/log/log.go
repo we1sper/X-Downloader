@@ -5,19 +5,17 @@ import (
 	"io"
 	"os"
 
-	"X-Downloader/pkg/config"
-
 	"github.com/sirupsen/logrus"
 )
 
-func InitializeLog(cfg *config.Config) {
+func InitializeLog(logLevel, logFile string) {
 	logrus.SetFormatter(&logrus.TextFormatter{
 		ForceColors:     true,
 		TimestampFormat: "2008-01-01 12:00:00",
 		FullTimestamp:   true,
 	})
 
-	switch cfg.LogLevel {
+	switch logLevel {
 	case "panic":
 		logrus.SetLevel(logrus.PanicLevel)
 	case "fatal":
@@ -34,8 +32,8 @@ func InitializeLog(cfg *config.Config) {
 		logrus.SetLevel(logrus.TraceLevel)
 	}
 
-	if len(cfg.LogFile) > 0 {
-		file, err := os.OpenFile(cfg.LogFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666)
+	if len(logFile) > 0 {
+		file, err := os.OpenFile(logFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666)
 		if err != nil {
 			fmt.Printf("[ERROR] failed to open log file: %v\n", err)
 		} else {

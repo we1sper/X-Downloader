@@ -73,9 +73,9 @@ func (valueCommand *ValueArgument) ReadLine(args []string) error {
 
 func (valueCommand *ValueArgument) String() string {
 	if valueCommand.required {
-		return fmt.Sprintf("[Required] %s/%s \t %s", valueCommand.full, valueCommand.short, valueCommand.desc)
+		return fmt.Sprintf("[Required] %s/%s    %s", valueCommand.full, valueCommand.short, valueCommand.desc)
 	}
-	return fmt.Sprintf("[Optional] %s/%s \t %s", valueCommand.full, valueCommand.short, valueCommand.desc)
+	return fmt.Sprintf("[Optional] %s/%s    %s", valueCommand.full, valueCommand.short, valueCommand.desc)
 }
 
 func (valueCommand *ValueArgument) Required() *ValueArgument {
@@ -130,7 +130,7 @@ func (markCommand *MarkArgument) ReadLine(args []string) error {
 }
 
 func (markCommand *MarkArgument) String() string {
-	return fmt.Sprintf("[Optional] %s/%s \t %s", markCommand.full, markCommand.short, markCommand.desc)
+	return fmt.Sprintf("[Optional] %s/%s    %s", markCommand.full, markCommand.short, markCommand.desc)
 }
 
 func (markCommand *MarkArgument) Present() bool {

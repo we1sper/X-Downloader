@@ -1,1 +1,4 @@
 ENVIRONMENT_VARIABLES
+
+/entry/x/cli/*.exe
+/entry/x/cli/*.json

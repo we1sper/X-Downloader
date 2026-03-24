@@ -70,7 +70,7 @@ func (cmd *Command) EnableHelp() *Command {
 func (cmd *Command) usage() string {
 	usage := "Usage:\n"
 	for _, argument := range cmd.arguments {
-		usage += fmt.Sprintf("\t%s\n", argument)
+		usage += fmt.Sprintf("    %s\n", argument)
 	}
 	return usage
 }

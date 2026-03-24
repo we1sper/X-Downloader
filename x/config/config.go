@@ -7,28 +7,30 @@ import (
 )
 
 type Config struct {
-	Cookie      string
-	BearerToken string
-	Retry       uint64
-	Downloader  uint64
-	Timeout     uint64
-	SaveDir     string
-	Overwrite   bool
-	Delta       bool
-	Download    bool
-	Proxy       string
-	LogLevel    string
-	LogFile     string
+	Cookie           string
+	BearerToken      string
+	Retry            uint64
+	Downloader       uint64
+	Timeout          uint64
+	SaveDir          string
+	Overwrite        bool
+	Delta            bool
+	Download         bool
+	Proxy            string
+	LogLevel         string
+	LogFile          string
+	BarrierCandidate uint64
 }
 
 func NewConfig() *Config {
 	return &Config{
-		Retry:      5,
-		Downloader: 4,
-		Timeout:    60000,
-		Delta:      true,
-		Download:   true,
-		LogLevel:   "info",
+		Retry:            5,
+		Downloader:       4,
+		Timeout:          60000,
+		Delta:            true,
+		Download:         true,
+		LogLevel:         "info",
+		BarrierCandidate: 10,
 	}
 }
 
@@ -58,5 +60,6 @@ func (cfg *Config) String() string {
 	str += fmt.Sprintf("Proxy=%v\n", cfg.Proxy)
 	str += fmt.Sprintf("LogLevel=%v\n", cfg.LogLevel)
 	str += fmt.Sprintf("LogFile=%v\n", cfg.LogFile)
+	str += fmt.Sprintf("BarrierCandidate=%v\n", cfg.BarrierCandidate)
 	return str
 }

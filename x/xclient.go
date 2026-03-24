@@ -1,30 +1,64 @@
 package x
 
 import (
-	"X-Downloader/pkg/log"
-	"X-Downloader/pkg/util"
+	"context"
 	"fmt"
 	"net/http"
 	"path"
 	"strings"
+	"sync"
 	"time"
 
+	"X-Downloader/pkg/log"
+	"X-Downloader/pkg/util"
+
 	"X-Downloader/pkg/client"
-	"X-Downloader/pkg/config"
 	"X-Downloader/pkg/value"
 	"X-Downloader/x/api"
+	"X-Downloader/x/config"
 )
+
+type Metadata struct {
+	UserProfile *api.UserProfile `json:"user_profile"`
+	Tweets      []*api.Tweet     `json:"tweets"`
+}
+
+type QueryResult struct {
+	NextCursor     string
+	EarlyStopped   bool
+	BarrierTouched string
+	Tweets         []*api.Tweet
+}
+
+func (result *QueryResult) AppendTweet(tweet *api.Tweet, barriers []string) bool {
+	for _, barrier := range barriers {
+		if barrier == tweet.ID {
+			result.EarlyStopped = true
+			result.BarrierTouched = barrier
+			break
+		}
+	}
+	if !result.EarlyStopped {
+		result.Tweets = append(result.Tweets, tweet)
+	}
+	return !result.EarlyStopped
+}
 
 type XClient struct {
 	queryClient    *client.HttpClient
 	downloadClient *client.HttpClient
-
-	cfg *config.Config
+	cfg            *config.Config
+	wg             *sync.WaitGroup
+	ctx            context.Context
+	cancel         context.CancelFunc
+	taskChan       chan *DownloadTask
 }
 
 func NewXClient(cfg *config.Config) (*XClient, error) {
 	xClient := &XClient{
-		cfg: cfg,
+		cfg:      cfg,
+		wg:       &sync.WaitGroup{},
+		taskChan: make(chan *DownloadTask, 16384),
 	}
 
 	if queryClient, err := createHttpClient(cfg); err != nil {
@@ -39,7 +73,40 @@ func NewXClient(cfg *config.Config) (*XClient, error) {
 		xClient.downloadClient = downloadClient
 	}
 
+	xClient.ctx, xClient.cancel = context.WithCancel(context.Background())
+
 	return xClient, nil
+}
+
+func (x *XClient) Start() {
+	for id := 0; id < int(x.cfg.Downloader); id++ {
+		x.wg.Add(1)
+		go x.downloader(id)
+	}
+}
+
+func (x *XClient) Stop() {
+	x.cancel()
+
+	time.Sleep(1 * time.Second)
+
+	drain := func() {
+		for {
+			select {
+			case _ = <-x.taskChan:
+			default:
+				return
+			}
+		}
+	}
+
+	drain()
+
+	close(x.taskChan)
+}
+
+func (x *XClient) Hang() {
+	x.wg.Wait()
 }
 
 func (x *XClient) Download(task *DownloadTask) (bool, error) {
@@ -75,7 +142,7 @@ func (x *XClient) QueryProfile(screenName string) (*api.UserProfile, error) {
 
 	resp, err := x.queryClient.Get(query.EncodedUrl)
 	if err != nil {
-		return nil, fmt.Errorf("query user profile error: %v", err)
+		return nil, fmt.Errorf("execute user profile query error: %v", err)
 	}
 
 	defer resp.Body.Close()
@@ -97,6 +164,7 @@ func (x *XClient) QueryProfile(screenName string) (*api.UserProfile, error) {
 		FollowersCount:    l.Get("followers_count").Unsafe().Float64(),
 		FriendsCount:      l.Get("friends_count").Unsafe().Float64(),
 		MediaCount:        l.Get("media_count").Unsafe().Float64(),
+		ListedCount:       l.Get("listed_count").Unsafe().Float64(),
 		Location:          l.Get("location").Unsafe().String(),
 		PinnedTweetIds:    l.Get("pinned_tweet_ids_str").Unsafe().StringSlice(),
 		PossiblySensitive: l.Get("possibly_sensitive").Unsafe().Bool(),
@@ -284,6 +352,14 @@ func (x *XClient) QueryTweets(userID, cursor string, barriers []string) (*QueryR
 	return queryResult, nil
 }
 
+func (x *XClient) DownloadMediaTweets(screenName string) (*Metadata, error) {
+	return x.scroller(screenName, x.QueryMediaTweets, false)
+}
+
+func (x *XClient) DownloadTweets(screenName string) (*Metadata, error) {
+	return x.scroller(screenName, x.QueryTweets, true)
+}
+
 func (x *XClient) prepare(urlProvider func() string) (*QueryResult, *value.Value, error) {
 	queryResult := &QueryResult{
 		NextCursor:     "",
@@ -421,4 +497,17 @@ func (x *XClient) extractTweetLink(fullText string) string {
 		return candidate
 	}
 	return ""
+}
+
+func (x *XClient) saveMetadata(saveDir string, metadata *Metadata) error {
+	if err := util.CreateDirectory(saveDir); err != nil {
+		return fmt.Errorf("create directory error: %v", err)
+	}
+	year, month, day := time.Now().Date()
+	fileName := fmt.Sprintf("%v-%v-%v.json", year, int(month), day)
+	filePath := path.Join(saveDir, fileName)
+	if err := util.SaveToJsonFile(filePath, metadata); err != nil {
+		return fmt.Errorf("save to file error: %v", err)
+	}
+	return nil
 }

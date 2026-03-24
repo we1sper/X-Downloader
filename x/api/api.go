@@ -11,6 +11,7 @@ type UserProfile struct {
 	Description       string   `json:"description"`
 	FollowersCount    float64  `json:"followers_count"`
 	FriendsCount      float64  `json:"friends_count"`
+	ListedCount       float64  `json:"listed_count"`
 	MediaCount        float64  `json:"media_count"`
 	Location          string   `json:"location"`
 	PinnedTweetIds    []string `json:"pinned_tweet_ids"`
