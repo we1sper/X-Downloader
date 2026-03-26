@@ -3,10 +3,10 @@ package x
 import (
 	"fmt"
 
-	"X-Downloader/pkg/client"
-	"X-Downloader/pkg/util"
-	"X-Downloader/x/api"
-	"X-Downloader/x/config"
+	"github.com/we1sper/X-Downloader/pkg/client"
+	"github.com/we1sper/X-Downloader/pkg/util"
+	"github.com/we1sper/X-Downloader/x/api"
+	"github.com/we1sper/X-Downloader/x/config"
 )
 
 func createBaseHttpClient(cfg *config.Config) (*client.HttpClient, error) {

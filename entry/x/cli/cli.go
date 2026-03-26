@@ -3,11 +3,11 @@ package main
 import (
 	"fmt"
 
-	"X-Downloader/pkg/command"
-	"X-Downloader/pkg/log"
-	"X-Downloader/pkg/util"
-	"X-Downloader/x"
-	"X-Downloader/x/config"
+	"github.com/we1sper/X-Downloader/pkg/command"
+	"github.com/we1sper/X-Downloader/pkg/log"
+	"github.com/we1sper/X-Downloader/pkg/util"
+	"github.com/we1sper/X-Downloader/x"
+	"github.com/we1sper/X-Downloader/x/config"
 )
 
 var (

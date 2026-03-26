@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"X-Downloader/x/config"
+	"github.com/we1sper/X-Downloader/x/config"
 )
 
 func prepare(configurer func(cfg *config.Config)) (*XClient, error) {

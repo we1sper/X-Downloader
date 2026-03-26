@@ -6,8 +6,8 @@ import (
 	"path"
 	"time"
 
-	"X-Downloader/pkg/log"
-	"X-Downloader/x/api"
+	"github.com/we1sper/X-Downloader/pkg/log"
+	"github.com/we1sper/X-Downloader/x/api"
 )
 
 func (x *XClient) scroller(screenName string, caller func(userID, cursor string, barriers []string) (*QueryResult, error), all bool) (*Metadata, error) {

@@ -9,13 +9,13 @@ import (
 	"sync"
 	"time"
 
-	"X-Downloader/pkg/log"
-	"X-Downloader/pkg/util"
+	"github.com/we1sper/X-Downloader/pkg/log"
+	"github.com/we1sper/X-Downloader/pkg/util"
 
-	"X-Downloader/pkg/client"
-	"X-Downloader/pkg/value"
-	"X-Downloader/x/api"
-	"X-Downloader/x/config"
+	"github.com/we1sper/X-Downloader/pkg/client"
+	"github.com/we1sper/X-Downloader/pkg/value"
+	"github.com/we1sper/X-Downloader/x/api"
+	"github.com/we1sper/X-Downloader/x/config"
 )
 
 type Metadata struct {

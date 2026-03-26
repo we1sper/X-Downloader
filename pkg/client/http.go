@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"time"
 
-	"X-Downloader/pkg/backoff"
+	"github.com/we1sper/X-Downloader/pkg/backoff"
 )
 
 type Option struct {

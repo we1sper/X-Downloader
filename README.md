@@ -21,9 +21,9 @@ After the build is complete, an executable file named `cli` will be generated in
 
 ### Run
 
-#### 1. Generate config file template
+#### 1. Generate template config file
 
-Run the following command to generate a config template file in the current working directory:
+Run the following command to generate a template config file in the current working directory:
 
 ```bash
 ./cli -t

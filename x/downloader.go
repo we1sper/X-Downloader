@@ -4,8 +4,8 @@ import (
 	"sync"
 	"time"
 
-	"X-Downloader/pkg/log"
-	"X-Downloader/x/api"
+	"github.com/we1sper/X-Downloader/pkg/log"
+	"github.com/we1sper/X-Downloader/x/api"
 )
 
 type TaskMetadata struct {
