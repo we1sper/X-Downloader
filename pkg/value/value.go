@@ -119,7 +119,7 @@ func (v *Value) Bool() (bool, error) {
 	if result, ok := v.prototype.(bool); ok {
 		return result, nil
 	}
-	return false, fmt.Errorf("value '%s' is not int type", v.prototype)
+	return false, fmt.Errorf("value '%s' is not bool type", v.prototype)
 }
 
 func (v *Value) Float64() (float64, error) {
