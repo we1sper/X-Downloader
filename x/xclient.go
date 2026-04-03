@@ -2,7 +2,9 @@ package x
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"path"
 	"strings"
@@ -13,9 +15,9 @@ import (
 	"github.com/we1sper/X-Downloader/pkg/util"
 
 	"github.com/we1sper/X-Downloader/pkg/client"
-	"github.com/we1sper/X-Downloader/pkg/value"
 	"github.com/we1sper/X-Downloader/x/api"
 	"github.com/we1sper/X-Downloader/x/config"
+	"github.com/we1sper/go-map-retriever"
 )
 
 type Metadata struct {
@@ -147,12 +149,12 @@ func (x *XClient) QueryProfile(screenName string) (*api.UserProfile, error) {
 
 	defer resp.Body.Close()
 
-	v, err := value.NewValueFromReader(resp.Body)
+	retriever, err := x.getMapRetriever(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("create value from response body error: %v", err)
+		return nil, fmt.Errorf("initialize map retriever from response body error: %v", err)
 	}
 
-	r := v.Get("data", "user", "result")
+	r := retriever.Get("data", "user", "result")
 	l := r.Get("legacy")
 
 	profile := &api.UserProfile{
@@ -208,7 +210,7 @@ func (x *XClient) QueryProfile(screenName string) (*api.UserProfile, error) {
 }
 
 func (x *XClient) QueryMediaTweets(userID, cursor string, barriers []string) (*QueryResult, error) {
-	queryResult, v, err := x.prepare(func() string {
+	queryResult, retriever, err := x.prepare(func() string {
 		query, _ := api.NewUserMediaQuery(userID, cursor)
 		return query.EncodedUrl
 	})
@@ -216,15 +218,15 @@ func (x *XClient) QueryMediaTweets(userID, cursor string, barriers []string) (*Q
 		return queryResult, err
 	}
 
-	instructions := v.Get("data", "user", "result", "timeline_v2", "timeline", "instructions")
+	instructions := retriever.Get("data", "user", "result", "timeline_v2", "timeline", "instructions")
 
-	resultProcessor := func(result *value.Value, pinned bool) bool {
+	resultProcessor := func(result *mapretriever.MapRetriever, pinned bool) bool {
 		tweet := x.handleResult(result)
 		tweet.Pinned = pinned
 		return queryResult.AppendTweet(tweet, barriers)
 	}
 
-	itemProcessor := func(item *value.Value) bool {
+	itemProcessor := func(item *mapretriever.MapRetriever) bool {
 		itemContent := item.Get("item", "itemContent")
 		itemType := itemContent.Get("itemType").Unsafe().String()
 
@@ -244,7 +246,7 @@ func (x *XClient) QueryMediaTweets(userID, cursor string, barriers []string) (*Q
 		return true
 	}
 
-	entryProcessor := func(entry *value.Value) bool {
+	entryProcessor := func(entry *mapretriever.MapRetriever) bool {
 		entryType := entry.Get("content", "entryType").Unsafe().String()
 
 		switch entryType {
@@ -263,7 +265,7 @@ func (x *XClient) QueryMediaTweets(userID, cursor string, barriers []string) (*Q
 		return true
 	}
 
-	instructionProcessor := func(instruction *value.Value) bool {
+	instructionProcessor := func(instruction *mapretriever.MapRetriever) bool {
 		instructionType := instruction.Get("type").Unsafe().String()
 
 		switch instructionType {
@@ -294,7 +296,7 @@ func (x *XClient) QueryMediaTweets(userID, cursor string, barriers []string) (*Q
 }
 
 func (x *XClient) QueryTweets(userID, cursor string, barriers []string) (*QueryResult, error) {
-	queryResult, v, err := x.prepare(func() string {
+	queryResult, retriever, err := x.prepare(func() string {
 		query, _ := api.NewUserTweetsQuery(userID, cursor)
 		return query.EncodedUrl
 	})
@@ -302,16 +304,16 @@ func (x *XClient) QueryTweets(userID, cursor string, barriers []string) (*QueryR
 		return queryResult, err
 	}
 
-	instructions := v.Get("data", "user", "result", "timeline", "timeline", "instructions")
+	instructions := retriever.Get("data", "user", "result", "timeline", "timeline", "instructions")
 
-	processEntry := func(entry *value.Value) bool {
+	processEntry := func(entry *mapretriever.MapRetriever) bool {
 		itemContent := entry.Get("content", "itemContent")
 		tweet := x.handleResult(itemContent.Get("tweet_results", "result"))
 		tweet.Pinned = itemContent.Get("socialContext", "contextType").Unsafe().String() == "Pin"
 		return queryResult.AppendTweet(tweet, barriers)
 	}
 
-	entryProcessor := func(entry *value.Value) bool {
+	entryProcessor := func(entry *mapretriever.MapRetriever) bool {
 		entryType := entry.Get("content", "entryType").Unsafe().String()
 
 		switch entryType {
@@ -326,7 +328,7 @@ func (x *XClient) QueryTweets(userID, cursor string, barriers []string) (*QueryR
 		return true
 	}
 
-	instructionProcessor := func(instruction *value.Value) bool {
+	instructionProcessor := func(instruction *mapretriever.MapRetriever) bool {
 		instructionType := instruction.Get("type").Unsafe().String()
 
 		switch instructionType {
@@ -360,7 +362,7 @@ func (x *XClient) DownloadTweets(screenName string) (*Metadata, error) {
 	return x.scroller(screenName, x.QueryTweets, true)
 }
 
-func (x *XClient) prepare(urlProvider func() string) (*QueryResult, *value.Value, error) {
+func (x *XClient) prepare(urlProvider func() string) (*QueryResult, *mapretriever.MapRetriever, error) {
 	queryResult := &QueryResult{
 		NextCursor:     "",
 		EarlyStopped:   false,
@@ -377,15 +379,15 @@ func (x *XClient) prepare(urlProvider func() string) (*QueryResult, *value.Value
 
 	defer resp.Body.Close()
 
-	v, err := value.NewValueFromReader(resp.Body)
+	retriever, err := x.getMapRetriever(resp.Body)
 	if err != nil {
 		return queryResult, nil, err
 	}
 
-	return queryResult, v, nil
+	return queryResult, retriever, nil
 }
 
-func (x *XClient) handleResult(r *value.Value) *api.Tweet {
+func (x *XClient) handleResult(r *mapretriever.MapRetriever) *api.Tweet {
 	l := r.Get("legacy")
 
 	tweet := &api.Tweet{
@@ -447,7 +449,7 @@ func (x *XClient) handleResult(r *value.Value) *api.Tweet {
 	return tweet
 }
 
-func (x *XClient) mediaProcessor(m *value.Value, acceptor func(media *api.Media)) {
+func (x *XClient) mediaProcessor(m *mapretriever.MapRetriever, acceptor func(media *api.Media)) {
 	mediaType := m.Get("type").Unsafe().String()
 
 	var url string
@@ -478,7 +480,7 @@ func (x *XClient) mediaProcessor(m *value.Value, acceptor func(media *api.Media)
 	acceptor(media)
 }
 
-func (x *XClient) cursorProcessor(entry *value.Value, acceptor func(cursor string)) {
+func (x *XClient) cursorProcessor(entry *mapretriever.MapRetriever, acceptor func(cursor string)) {
 	cursorType := entry.Get("content", "cursorType").Unsafe().String()
 
 	// Get the bottom cursor as we follow the top-to-down scrolling strategy.
@@ -510,4 +512,13 @@ func (x *XClient) saveMetadata(saveDir string, metadata *Metadata) error {
 		return fmt.Errorf("save to file error: %v", err)
 	}
 	return nil
+}
+
+func (x *XClient) getMapRetriever(reader io.Reader) (*mapretriever.MapRetriever, error) {
+	var raw map[string]interface{}
+	err := json.NewDecoder(reader).Decode(&raw)
+	if err != nil {
+		return nil, err
+	}
+	return mapretriever.NewMapRetriever(raw), nil
 }
