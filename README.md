@@ -8,8 +8,6 @@ A lightweight media downloader for X (Twitter), built with Go.
 
 - go 1.25 or higher
 
-Note: The program is compatible with lower Go versions with manual modification of the `go.mod` file.
-
 ### Build
 
 ```bash
