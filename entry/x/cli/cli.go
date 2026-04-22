@@ -38,14 +38,14 @@ func init() {
 		return nil
 	})
 
-	configArgument := command.NewValueArgument("config", "c", "specific config file path").Action(func(values []string) error {
+	configArgument := command.NewValueArgument("config", "c", "specify config file path").Action(func(values []string) error {
 		if len(values) > 0 {
 			cfgPath = values[0]
 		}
 		return nil
 	})
 
-	screenNameArgument := command.NewValueArgument("user", "u", "specific user screen name").Action(func(values []string) error {
+	screenNameArgument := command.NewValueArgument("user", "u", "specify user screen name").Action(func(values []string) error {
 		if len(cfgPath) == 0 {
 			return fmt.Errorf("no config file specified")
 		}
